@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+
+  notes Note[]
+  tags  Tag[]
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  user_id     String
+  title       String
+  content     String   @default("")
+  is_archived Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  user     User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tags     NoteTag[]
+  linksFrom NoteLink[] @relation("FromNote")
+  linksTo   NoteLink[] @relation("ToNote")
+
+  @@index([user_id])
+}
+
+model Tag {
+  id         String   @id @default(uuid())
+  user_id    String
+  name       String
+  created_at DateTime @default(now())
+
+  user  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  notes NoteTag[]
+
+  @@unique([user_id, name])
+  @@index([user_id])
+}
+
+model NoteTag {
+  note_id String
+  tag_id  String
+
+  note Note @relation(fields: [note_id], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([note_id, tag_id])
+}
+
+model NoteLink {
+  from_note_id String
+  to_note_id   String
+
+  fromNote Note @relation("FromNote", fields: [from_note_id], references: [id], onDelete: Cascade)
+  toNote   Note @relation("ToNote", fields: [to_note_id], references: [id], onDelete: Cascade)
+
+  @@id([from_note_id, to_note_id])
+}
